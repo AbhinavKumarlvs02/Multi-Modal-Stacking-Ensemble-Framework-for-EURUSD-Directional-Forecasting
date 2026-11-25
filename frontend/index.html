@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EUR/USD AI Trading Simulation</title>
+<style>
+:root{--bg:#0a0e14;--pn:#0f141b;--pn2:#131a23;--bd:#1f2a37;--tx:#d6dde6;--mu:#7b8898;--up:#2ebd85;--dn:#f6465d;--bl:#4c8dff;--am:#f0b429;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--tx);font:13px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+button,input{font:inherit;color:inherit}
+button{background:var(--pn2);border:1px solid var(--bd);border-radius:4px;padding:5px 11px;cursor:pointer;white-space:nowrap}
+button:hover:not(:disabled){border-color:#33445a;background:#18212c}
+button:disabled{opacity:.4;cursor:not-allowed}
+input{width:100%;background:#0b1016;border:1px solid var(--bd);border-radius:4px;padding:5px 7px;font-family:var(--mono)}
+input:focus{outline:1px solid var(--bl);border-color:var(--bl)}
+code{font-family:var(--mono);background:#0004;padding:1px 5px;border-radius:3px}
+.up{color:var(--up)}.dn{color:var(--dn)}.mu{color:var(--mu)}
+
+header{display:flex;align-items:center;gap:16px;padding:8px 14px;background:var(--pn);border-bottom:1px solid var(--bd);flex-wrap:wrap}
+.brand{font-weight:700;font-size:16px;letter-spacing:.5px}
+.brand small{color:var(--mu);font-weight:400;font-size:11px;margin-left:8px;letter-spacing:0}
+.tick{display:flex;gap:10px;align-items:baseline;font-family:var(--mono)}
+#date{color:var(--mu)}#price{font-size:18px;font-weight:600}#chg{font-size:12px}
+.badge{padding:3px 9px;border-radius:3px;font-size:11px;font-weight:600;letter-spacing:.4px;border:1px solid}
+.badge.ok{color:var(--up);border-color:var(--up);background:#2ebd8514}
+.badge.bad{color:var(--dn);border-color:var(--dn);background:#f6465d14}
+.badge.wait{color:var(--am);border-color:var(--am);background:#f0b42914}
+.ctrls{display:flex;gap:6px;margin-left:auto;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-child{border-radius:4px 0 0 4px;margin-left:0}
+.seg button:last-child{border-radius:0 4px 4px 0}
+.seg button.on{background:var(--bl);border-color:var(--bl);color:#fff}
+.seg.wide{display:flex}.seg.wide button{flex:1}
+#banner{background:#3a1218;color:#ffb4bd;border-bottom:1px solid #6b1f2b;padding:7px 14px;font-size:12px}
+
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 340px}
+#chartwrap{position:relative;min-height:0}#chart{position:absolute;inset:0}
+aside{overflow-y:auto;border-left:1px solid var(--bd);background:var(--pn);padding:10px;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--pn2);border:1px solid var(--bd);border-radius:6px;padding:10px 12px}
+h3{margin:0 0 8px;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mu)}
+.row{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px}
+.row b{font-family:var(--mono);font-size:15px}
+
+.sig{text-align:center;font-size:30px;font-weight:800;letter-spacing:2px;padding:10px;border-radius:6px;border:1px solid var(--bd);color:var(--mu)}
+.sig.long{color:var(--up);background:#2ebd8518;border-color:var(--up)}
+.sig.short{color:var(--dn);background:#f6465d18;border-color:var(--dn)}
+.convw{position:relative;margin-top:10px}
+.conv{position:relative;height:14px;border-radius:3px;overflow:hidden;background:#ffffff0a}
+.z{position:absolute;top:0;bottom:0}.z.l{left:0;background:#f6465d66}.z.m{background:#ffffff1c}.z.h{background:#2ebd8566}
+.ptr{position:absolute;top:-4px;height:22px;width:3px;background:#fff;border-radius:2px;transform:translateX(-50%);box-shadow:0 0 6px #fff9;transition:left .25s}
+.cl{position:relative;height:16px;margin-top:4px;font:11px var(--mono);color:var(--mu)}
+.cl span{position:absolute;white-space:nowrap;top:0}
+#tl{transform:translateX(-100%);color:var(--dn)}#tu{color:var(--up)}
+.mb{display:grid;grid-template-columns:104px 1fr 50px;gap:8px;align-items:center;margin:7px 0;font-size:12px}
+.bar{position:relative;height:8px;background:#ffffff10;border-radius:4px}
+.bar i{display:block;height:100%;width:0;border-radius:4px;background:var(--bl);transition:width .25s}
+.bar::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:#ffffff55}
+.mb b{font:500 12px var(--mono);text-align:right}
+
+.manual{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:10px 0}
+.buy{border-color:var(--up)!important;color:var(--up)}.sell{border-color:var(--dn)!important;color:var(--dn)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid2 label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--mu)}
+.grid2 small{color:var(--am);font-family:var(--mono)}
+h4{margin:12px 0 6px;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mu)}
+.kv{display:flex;justify-content:space-between;padding:2px 0;font-family:var(--mono)}
+.prow{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.pill{display:inline-block;padding:1px 8px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.5px}
+.pill.long{background:#2ebd8522;color:var(--up)}.pill.short{background:#f6465d22;color:var(--dn)}
+
+#bottom{height:250px;border-top:1px solid var(--bd);background:var(--pn);display:flex;flex-direction:column;min-height:0}
+#kpis{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--bd)}
+.kpi{padding:7px 14px;border-right:1px solid var(--bd)}.kpi:last-child{border-right:0}
+.kpi span{display:block;font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:var(--mu)}
+.kpi b{font:600 15px var(--mono)}
+.tbar{display:flex;justify-content:space-between;align-items:center;padding:6px 14px 0}.tbar h3{margin:0}
+.tw{flex:1;overflow:auto;padding:6px 14px 8px}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+th{position:sticky;top:0;background:var(--pn);text-align:right;color:var(--mu);font:600 10px system-ui;letter-spacing:.7px;text-transform:uppercase;padding:5px 8px;border-bottom:1px solid var(--bd)}
+td{text-align:right;padding:4px 8px;border-bottom:1px solid #151d27}
+th:nth-child(-n+3),td:nth-child(-n+3){text-align:left}
+
+@media(max-width:980px){
+ body{height:auto;overflow:auto}
+ main{grid-template-columns:1fr}#chartwrap{height:380px}aside{border-left:0}
+ #kpis{grid-template-columns:repeat(2,1fr)}#bottom{height:auto}.tw{max-height:260px}.ctrls{margin-left:0}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">EUR/USD<small>T+5 Stacked Ensemble · Blind-Test Replay</small></div>
+  <div class="tick"><span id="date">—</span><span id="price">—</span><span id="chg"></span></div>
+  <span id="badge" class="badge wait">CONNECTING…</span>
+  <div class="ctrls">
+    <button id="play" disabled>▶ Play</button>
+    <button id="pause" disabled>❚❚ Pause</button>
+    <button id="step" disabled>Step +1 Day</button>
+    <button id="reset" disabled>Reset</button>
+    <div class="seg" id="speed"><button data-s="1" class="on">1x</button><button data-s="2">2x</button><button data-s="5">5x</button></div>
+  </div>
+</header>
+<div id="banner" hidden></div>
+
+<main>
+  <section id="chartwrap"><div id="chart"></div></section>
+  <aside>
+    <section class="card">
+      <h3>AI Signal &amp; Consensus</h3>
+      <div id="sig" class="sig hold">—</div>
+      <div class="row"><span class="mu">Ensemble probability</span><b id="ens">—</b></div>
+      <div class="convw">
+        <div class="conv"><div id="zl" class="z l"></div><div id="zm" class="z m"></div><div id="zh" class="z h"></div></div>
+        <div id="ptr" class="ptr" hidden></div>
+      </div>
+      <div class="cl"><span id="tl"></span><span id="tu"></span></div>
+      <h4>Model Probabilities</h4>
+      <div class="mb"><span>LightGBM</span><div class="bar"><i id="b-lgbm"></i></div><b id="v-lgbm">—</b></div>
+      <div class="mb"><span>CatBoost</span><div class="bar"><i id="b-cb"></i></div><b id="v-cb">—</b></div>
+      <div class="mb"><span>Two-Tower Transformer</span><div class="bar"><i id="b-tf"></i></div><b id="v-tf">—</b></div>
+    </section>
+
+    <section class="card">
+      <h3>Execution &amp; Risk</h3>
+      <div class="seg wide" id="mode"><button data-m="auto" class="on">AI Auto-Pilot</button><button data-m="manual">Manual Mode</button></div>
+      <div class="manual">
+        <button id="buy" class="buy" disabled>Buy</button>
+        <button id="sell" class="sell" disabled>Sell</button>
+        <button id="close" disabled>Close</button>
+      </div>
+      <div class="grid2">
+        <label>Starting Capital ($)<input id="cap" type="number" value="10000" min="100" step="100"></label>
+        <label>Lot Size<input id="lot" type="number" value="0.20" min="0.01" step="0.01"><small id="pipval">$2.00 / pip</small></label>
+        <label>Spread (pips)<input id="spread" type="number" value="1.5" min="0" step="0.1"></label>
+        <label>Hold Horizon (days)<input id="hold" type="number" value="5" min="1" max="30" step="1"></label>
+      </div>
+      <h4>Active Position</h4>
+      <div id="pos"></div>
+    </section>
+  </aside>
+</main>
+
+<section id="bottom">
+  <div id="kpis">
+    <div class="kpi"><span>Equity</span><b id="k-eq">—</b></div>
+    <div class="kpi"><span>Net P&amp;L</span><b id="k-pnl">—</b></div>
+    <div class="kpi"><span>Net Pips</span><b id="k-pips">—</b></div>
+    <div class="kpi"><span>Win Rate</span><b id="k-win">—</b></div>
+    <div class="kpi"><span>Profit Factor</span><b id="k-pf">—</b></div>
+    <div class="kpi"><span>Sharpe (Ann.)</span><b id="k-sh">—</b></div>
+    <div class="kpi"><span>Max Drawdown</span><b id="k-dd">—</b></div>
+  </div>
+  <div class="tbar"><h3>Trade History</h3><button id="export">Export CSV</button></div>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Entry Date</th><th>Exit Date</th><th>Direction</th><th>Entry Price</th><th>Exit Price</th><th>AI Prob</th><th>Net Pips</th><th>Net P&amp;L ($)</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<script src="https://unpkg.com/lightweight-charts@5.3.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
